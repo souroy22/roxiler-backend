@@ -12,16 +12,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const genarateToken = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    if (!((_a = process.env.SECRET_KEY) === null || _a === void 0 ? void 0 : _a.trim())) {
-        return null;
+exports.getUniqueCategoriesCount = void 0;
+const category_model_1 = __importDefault(require("../models/category.model"));
+const getUniqueCategoriesCount = (transactions) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = {};
+    const categories = yield category_model_1.default.find();
+    for (let category of categories) {
+        data[category.name] = 0;
     }
-    const token = yield jsonwebtoken_1.default.sign({ user }, process.env.SECRET_KEY, {
-        expiresIn: "1d", // expires in 1 Day
-    });
-    return token;
+    for (let transaction of transactions) {
+        if (data.hasOwnProperty(transaction.category)) {
+            data[transaction.category] += 1;
+        }
+        else {
+            data[transaction.category] = 1;
+        }
+    }
+    return data;
 });
-exports.default = genarateToken;
-//# sourceMappingURL=generateToken.js.map
+exports.getUniqueCategoriesCount = getUniqueCategoriesCount;
+//# sourceMappingURL=getUniqueCategoriesCount.js.map

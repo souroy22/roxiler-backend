@@ -12,9 +12,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const bcrypt_1 = __importDefault(require("bcrypt"));
-const verifyPassword = (password, hashedPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    return bcrypt_1.default.compare(password, hashedPassword);
+exports.getTransactions = void 0;
+const transaction_model_1 = __importDefault(require("../models/transaction.model"));
+const getTransactions = (month_1, ...args_1) => __awaiter(void 0, [month_1, ...args_1], void 0, function* (month, project = null, lookup = null, unwind = "") {
+    const aggregateArray = [];
+    if (lookup) {
+        aggregateArray.push({
+            $lookup: lookup,
+        });
+    }
+    if (unwind.trim()) {
+        aggregateArray.push({
+            $unwind: unwind,
+        });
+    }
+    if (project) {
+        aggregateArray.push({
+            $project: project,
+        });
+    }
+    aggregateArray.push({
+        $match: {
+            month: month,
+        },
+    });
+    const transactions = yield transaction_model_1.default.aggregate(aggregateArray);
+    return transactions;
 });
-exports.default = verifyPassword;
-//# sourceMappingURL=verifyPassword.js.map
+exports.getTransactions = getTransactions;
+//# sourceMappingURL=getTransactions.js.map
