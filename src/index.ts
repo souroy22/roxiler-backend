@@ -37,5 +37,5 @@ app.get("/", (_: Request, res: Response) => {
 app.use("/api/v1", routers);
 
 app.listen(parseInt(PORT, 10), `0.0.0.0`, () => {
-  console.log(`Server is running on PORT: ${PORT}`);
+  console.log(`Server is successfully running on PORT: ${PORT}`);
 });
