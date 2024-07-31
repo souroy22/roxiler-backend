@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Document, Query } from "mongoose";
+import { Aggregate, Document, Model, Query } from "mongoose";
 
 export interface PaginationOptions {
   page?: number;
@@ -15,6 +15,46 @@ interface PaginationResult<T> {
   totalPages: number;
   data: T[];
 }
+
+export const aggregatePaginate = async <T extends Document>(
+  model: Model<T>,
+  pipeline: any[],
+  options: PaginationOptions
+): Promise<PaginationResult<T>> => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const skip = (page - 1) * limit;
+
+  // Create the aggregation pipeline for pagination
+  const paginatedPipeline = [...pipeline];
+
+  // Apply sorting if provided
+  if (options.sortBy) {
+    const sortOrder = options.sortOrder === "desc" ? -1 : 1;
+    paginatedPipeline.push({ $sort: { [options.sortBy]: sortOrder } });
+  }
+
+  paginatedPipeline.push({ $skip: skip }, { $limit: limit });
+
+  // Create the aggregation pipeline for total count
+  const totalPipeline = [...pipeline, { $count: "totalCount" }];
+
+  const [totalResult, data] = await Promise.all([
+    model.aggregate(totalPipeline).exec(),
+    model.aggregate(paginatedPipeline).exec(),
+  ]);
+
+  const total = totalResult.length > 0 ? totalResult[0].totalCount : 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data,
+    totalCount: total,
+    page,
+    limit,
+    totalPages,
+  };
+};
 
 export const paginate = async <T extends Document>(
   query: Query<T[], T>,

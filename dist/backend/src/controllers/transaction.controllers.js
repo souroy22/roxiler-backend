@@ -21,19 +21,49 @@ const getUniqueCategoriesCount_1 = require("../utils/getUniqueCategoriesCount");
 const transactionControllers = {
     getAllTransaction: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const { searchQuery } = req.query;
-            const query = {};
-            if (searchQuery) {
-                query.$or = [
-                    { title: { $regex: searchQuery, $options: "i" } },
-                    { description: { $regex: searchQuery, $options: "i" } },
-                ];
-            }
-            const dbQuery = transaction_model_1.default.find(query).populate({
-                path: "category",
-                select: "name -_id",
+            const { searchQuery, month } = req.query;
+            const query = [];
+            query.push({
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
             });
-            const result = yield (0, pagination_1.paginate)(dbQuery, req.pagination);
+            query.push({
+                $unwind: "$category",
+            });
+            query.push({
+                $project: {
+                    title: 1,
+                    description: 1,
+                    category: "$category.name",
+                    month: { $month: "$dateOfSale" },
+                    dateOfSale: 1,
+                    image: 1,
+                    sold: 1,
+                },
+            });
+            if (searchQuery) {
+                query.push({
+                    $match: {
+                        $or: [
+                            { title: { $regex: searchQuery, $options: "i" } },
+                            { description: { $regex: searchQuery, $options: "i" } },
+                        ],
+                    },
+                });
+            }
+            if (month) {
+                const monthNumber = parseInt(month, 10);
+                query.push({
+                    $match: {
+                        month: monthNumber,
+                    },
+                });
+            }
+            const result = yield (0, pagination_1.aggregatePaginate)(transaction_model_1.default, query, req.pagination);
             return res.status(200).json(result);
         }
         catch (error) {

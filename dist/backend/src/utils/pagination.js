@@ -9,7 +9,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paginateMiddleware = exports.paginate = void 0;
+exports.paginateMiddleware = exports.paginate = exports.aggregatePaginate = void 0;
+const aggregatePaginate = (model, pipeline, options) => __awaiter(void 0, void 0, void 0, function* () {
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const skip = (page - 1) * limit;
+    // Create the aggregation pipeline for pagination
+    const paginatedPipeline = [...pipeline];
+    // Apply sorting if provided
+    if (options.sortBy) {
+        const sortOrder = options.sortOrder === "desc" ? -1 : 1;
+        paginatedPipeline.push({ $sort: { [options.sortBy]: sortOrder } });
+    }
+    paginatedPipeline.push({ $skip: skip }, { $limit: limit });
+    // Create the aggregation pipeline for total count
+    const totalPipeline = [...pipeline, { $count: "totalCount" }];
+    const [totalResult, data] = yield Promise.all([
+        model.aggregate(totalPipeline).exec(),
+        model.aggregate(paginatedPipeline).exec(),
+    ]);
+    const total = totalResult.length > 0 ? totalResult[0].totalCount : 0;
+    const totalPages = Math.ceil(total / limit);
+    return {
+        data,
+        totalCount: total,
+        page,
+        limit,
+        totalPages,
+    };
+});
+exports.aggregatePaginate = aggregatePaginate;
 const paginate = (query, options) => __awaiter(void 0, void 0, void 0, function* () {
     const page = options.page || 1;
     const limit = options.limit || 10;

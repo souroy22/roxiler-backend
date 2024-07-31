@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Transaction from "../models/transaction.model";
-import { paginate } from "../utils/pagination";
+import { aggregatePaginate, paginate } from "../utils/pagination";
 import { getTransactions } from "../utils/getTransactions";
 import { getStatistics } from "../utils/getStatistics";
 import { getBarChartData } from "../utils/getBarChartData";
@@ -9,19 +9,59 @@ import { getUniqueCategoriesCount } from "../utils/getUniqueCategoriesCount";
 const transactionControllers = {
   getAllTransaction: async (req: Request, res: Response) => {
     try {
-      const { searchQuery } = req.query;
-      const query: any = {};
-      if (searchQuery) {
-        query.$or = [
-          { title: { $regex: searchQuery, $options: "i" } },
-          { description: { $regex: searchQuery, $options: "i" } },
-        ];
-      }
-      const dbQuery = Transaction.find(query).populate({
-        path: "category",
-        select: "name -_id",
+      const { searchQuery, month } = req.query;
+      const query = [];
+
+      query.push({
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
       });
-      const result = await paginate(dbQuery, req.pagination);
+
+      query.push({
+        $unwind: "$category",
+      });
+
+      query.push({
+        $project: {
+          title: 1,
+          description: 1,
+          category: "$category.name",
+          month: { $month: "$dateOfSale" },
+          dateOfSale: 1,
+          image: 1,
+          sold: 1,
+        },
+      });
+
+      if (searchQuery) {
+        query.push({
+          $match: {
+            $or: [
+              { title: { $regex: searchQuery, $options: "i" } },
+              { description: { $regex: searchQuery, $options: "i" } },
+            ],
+          },
+        });
+      }
+
+      if (month) {
+        const monthNumber = parseInt(month as string, 10);
+        query.push({
+          $match: {
+            month: monthNumber,
+          },
+        });
+      }
+
+      const result = await aggregatePaginate(
+        Transaction,
+        query,
+        req.pagination
+      );
       return res.status(200).json(result);
     } catch (error) {
       if (error instanceof Error) {
