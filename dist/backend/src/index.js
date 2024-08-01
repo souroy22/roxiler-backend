@@ -21,10 +21,10 @@ app.use((0, morgan_1.default)("dev"));
 app.use((0, cookie_parser_1.default)());
 (0, dbConfig_1.default)();
 app.get("/", (_, res) => {
-    return res.status(200).json({ msg: "Sucessfully running" });
+    return res.status(200).json({ msg: `Sucessfully running PORT: ${PORT}` });
 });
 app.use("/api/v1", routers_1.default);
 app.listen(parseInt(PORT, 10), `0.0.0.0`, () => {
-    console.log(`Server is running on PORT: ${PORT}`);
+    console.log(`Server is successfully running on PORT: ${PORT}`);
 });
 //# sourceMappingURL=index.js.map
