@@ -31,7 +31,7 @@ app.use(cookieParser());
 connectDB();
 
 app.get("/", (_: Request, res: Response) => {
-  return res.status(200).json({ msg: "Sucessfully running" });
+  return res.status(200).json({ msg: `Sucessfully running PORT: ${PORT}` });
 });
 
 app.use("/api/v1", routers);
