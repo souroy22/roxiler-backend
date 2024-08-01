@@ -13,5 +13,5 @@
       "*": ["node_modules/*", "src/types/*"]
     }
   },
-  "include": ["./src/**/*", "../frontend/src/hooks"]
+  "include": ["./src/**/*"]
 }
